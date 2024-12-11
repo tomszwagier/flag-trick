@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import autograd.numpy as anp
 import pymanopt
 from sklearn.datasets import load_digits, load_iris, fetch_olivetti_faces
+# from skimage.transform import resize
 from time import time
 
 from flag import Flag
@@ -36,34 +37,73 @@ def digits(n_in, n_out, model="0vsOther"):
     #     for im in faces[anp.random.choice(faces.shape[0], n_out, replace=False)]:
     #         X_out.append(resize(im, (8, 8)).flatten())
     #     X_out = anp.array(X_out).T
+    # elif model == "FacevsOther":
+    #     faces, labels = fetch_olivetti_faces(return_X_y=True)
+    #     faces = anp.array([resize(im.reshape(64, 64), (8, 8)).flatten() for im in faces])
+    #     X_in = faces[labels==0][anp.random.choice(anp.sum(labels==0), n_in, replace=False)]
+    #     X_out = faces[labels!=0][anp.random.choice(anp.sum(labels!=0), n_out, replace=False)]
+    #     X_in, X_out = anp.array(X_in).T, anp.array(X_out).T
     X, y = anp.concatenate([X_in, X_out], axis=1), anp.array([0] * n_in + [1] * n_out)
-    X = X - anp.mean(X_in, axis=1)[:, anp.newaxis]  # anp.median(X, axis=1)[:, anp.newaxis]
-    return X, y
+    center = anp.mean(X_in, axis=1)[:, anp.newaxis]
+    X = X - center  # anp.median(X, axis=1)[:, anp.newaxis]
+    return X, y, center
+
+
+# def plot_reconstruction_errors(X, n_in, U_Gr, U_Fl, signature):
+#     p, n = X.shape
+#     reconstruction_errors_gr = anp.linalg.norm(X - U_Gr @ U_Gr.T @ X, axis=0)
+#     flag_trick = anp.zeros((p, p))
+#     for q_k in signature:
+#         flag_trick += 1 / len(signature) * U_Fl[:, :q_k] @ U_Fl[:, :q_k].T
+#     reconstruction_errors_fl = anp.linalg.norm(X - flag_trick @ X, axis=0)  # TODO: check if better to apply flag trick or to do ensembling by averaging...
+#     plt.figure()
+#     plt.plot(anp.arange(n_in), reconstruction_errors_gr[:n_in], label='inliers', color="tab:blue")
+#     plt.plot(anp.arange(n_in, n), reconstruction_errors_gr[n_in:], label='outliers', color="tab:red")
+#     plt.legend()
+#     plt.title("Grassmann reconstruction errors")
+#     plt.show(block=False)
+#     plt.figure()
+#     plt.plot(anp.arange(n_in), reconstruction_errors_fl[:n_in], label='inliers', color="tab:blue")
+#     plt.plot(anp.arange(n_in, n), reconstruction_errors_fl[n_in:], label='outliers', color="tab:red")
+#     plt.legend()
+#     plt.title("Flag reconstruction errors")
+#     plt.show()
+#     plt.show(block=False)
 
 
 def plot_reconstruction_errors(X, n_in, U_Gr, U_Fl, signature):
     p, n = X.shape
-    plt.figure()
     reconstruction_errors_gr = anp.linalg.norm(X - U_Gr @ U_Gr.T @ X, axis=0)
-    reconstruction_errors_gr = anp.concatenate([anp.sort(reconstruction_errors_gr[:n_in]), anp.sort(reconstruction_errors_gr[n_in:])])
+    argsrt = anp.argsort(reconstruction_errors_gr)
+    reconstruction_errors_gr = reconstruction_errors_gr[argsrt]
+    labels_gr = anp.array([0] * n_in + [1] * n_out)[argsrt]
     flag_trick = anp.zeros((p, p))
     for q_k in signature:
         flag_trick += 1 / len(signature) * U_Fl[:, :q_k] @ U_Fl[:, :q_k].T
     reconstruction_errors_fl = anp.linalg.norm(X - flag_trick @ X, axis=0)  # TODO: check if better to apply flag trick or to do ensembling by averaging...
-    reconstruction_errors_fl = anp.concatenate([anp.sort(reconstruction_errors_fl[:n_in]), anp.sort(reconstruction_errors_fl[n_in:])])
-    plt.plot(anp.arange(1, n + 1), reconstruction_errors_gr, label='Gr reconstruction errors')
-    plt.plot(anp.arange(1, n + 1), reconstruction_errors_fl, label='Fl reconstruction errors')
-    plt.axvline(x=n_in+.5, color='k', ls='dashed', label='inliner-outlier separation')
+    argsrt = anp.argsort(reconstruction_errors_fl)
+    reconstruction_errors_fl = reconstruction_errors_fl[argsrt]
+    labels_fl = anp.array([0] * n_in + [1] * n_out)[argsrt]
+    plt.figure()
+    plt.scatter(anp.arange(n)[labels_gr==0], reconstruction_errors_gr[labels_gr==0], label='inliers', color="tab:blue", alpha=.8)
+    plt.scatter(anp.arange(n)[labels_gr==1], reconstruction_errors_gr[labels_gr==1], label='outliers', color="tab:red", alpha=.8)
+    plt.plot(anp.arange(n), reconstruction_errors_gr, color='k', label='Reconstruction Errors - Grassmann')
     plt.legend()
-    plt.interactive(False)
-    plt.show(block=True)
+    plt.show(block=False)
+    plt.figure()
+    plt.scatter(anp.arange(n)[labels_fl==0], reconstruction_errors_fl[labels_fl==0], label='inliers', color="tab:blue", alpha=.8)
+    plt.scatter(anp.arange(n)[labels_fl==1], reconstruction_errors_fl[labels_fl==1], label='outliers', color="tab:red", alpha=.8)
+    plt.plot(anp.arange(n), reconstruction_errors_fl, color='k', label='Reconstruction Errors - Flag')
+    plt.legend()
+    plt.show()
+    plt.show(block=False)
 
 
 if __name__ == "__main__":
     anp.random.seed(42)
 
     n_in, n_out = 90, 10
-    X, y = digits(n_in, n_out, model="0vsOther")
+    X, y, center = digits(n_in, n_out, model="0vsOther")
     p, n = X.shape
 
     signature = (1, 2, 5)
@@ -101,5 +141,6 @@ if __name__ == "__main__":
 
     plot_nestedness_scatter(X, results_gr[0].point, results_gr[1].point, result_fl.point)
     plot_reconstruction_errors(X, n_in, results_gr[-1].point, result_fl.point, signature)
+    plot_nestedness_images(X[:, 0].reshape(8, 8), center.reshape(8, 8), [res.point for res in results_gr], result_fl.point, signature)
     print(f"Gr: nestedness_errors = {[subspace_error(results_gr[k].point, results_gr[k+1].point, type='angle') for k in range(len(signature) - 1)]}, time = {time_gr}")
     print(f"Fl: nestedness_errors = {[subspace_error(result_fl.point[:, :signature[k]], result_fl.point[:, :signature[k+1]], type='angle') for k in range(len(signature) - 1)]}, time = {time_fl}")

@@ -28,21 +28,21 @@ def plot_nestedness_scatter(X, U_Gr_1, U_Gr_2, U_Fl):
     axes[0, 1].set_title('Flag - 1D')
     axes[1, 1].scatter(X_flag[0], X_flag[1], c='tab:green', alpha=.5)
     axes[1, 1].set_title('Flag - 2D')
-    plt.interactive(False)
-    plt.show(block=True)
+    plt.show(block=False)
 
 
-def plot_nestedness_images(image, U_Gr_list, U_Fl, signature):  # TODO should we add PCA before as commonly done? Should we add the mean, and so an axis for the mean in the plots too?
-    fig, axes = plt.subplots(nrows=2, ncols=len(signature) + 1)
+def plot_nestedness_images(image, center, U_Gr_list, U_Fl, signature):  # TODO should we add PCA before as commonly done? Should we add the mean, and so an axis for the mean in the plots too?
+    fig, axes = plt.subplots(nrows=2, ncols=len(signature) + 2)
     plt.set_cmap("gray")
-    for k, ax in enumerate(axes[0, :-1]):
-        ax.imshow((U_Gr_list[k] @ U_Gr_list[k].T @ image.flatten()).reshape(image.shape))
-    for k, ax in enumerate(axes[1, :-1]):
-        ax.imshow((U_Fl[:, :signature[k]] @ U_Fl[:, :signature[k]].T @ image.flatten()).reshape(image.shape))
-    axes[0, -1].imshow(image)
-    axes[1, -1].imshow(image)
-    plt.interactive(False)
-    plt.show(block=True)
+    for k, ax in enumerate(axes[0, 1:-1]):
+        ax.imshow(center + (U_Gr_list[k] @ U_Gr_list[k].T @ image.flatten()).reshape(image.shape))
+    for k, ax in enumerate(axes[1, 1:-1]):
+        ax.imshow(center + (U_Fl[:, :signature[k]] @ U_Fl[:, :signature[k]].T @ image.flatten()).reshape(image.shape))
+    axes[0, -1].imshow(center + image)
+    axes[1, -1].imshow(center + image)
+    axes[0, 0].imshow(center)
+    axes[1, 0].imshow(center)
+    plt.show(block=False)
 
 
 if __name__ == "__main__":
