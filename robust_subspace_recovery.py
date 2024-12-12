@@ -8,7 +8,7 @@ from sklearn.datasets import load_digits, load_iris, fetch_olivetti_faces
 from time import time
 
 from flag import Flag
-from utils import plot_nestedness_images, plot_nestedness_scatter, subspace_error
+from utils import plot_explained_variance, plot_nestedness_images, plot_nestedness_scatter, subspace_error
 
 
 def digits(n_in, n_out, model="0vsOther"):
@@ -139,8 +139,9 @@ if __name__ == "__main__":
         results_gr.append(result_gr)
     time_gr = time() - start_gr
 
+    print(f"Gr: nestedness_errors = {[subspace_error(results_gr[k].point, results_gr[k+1].point, type='angle') for k in range(len(signature) - 1)]}, time = {time_gr}")
+    print(f"Fl: nestedness_errors = {[subspace_error(result_fl.point[:, :signature[k]], result_fl.point[:, :signature[k+1]], type='angle') for k in range(len(signature) - 1)]}, time = {time_fl}")
     plot_nestedness_scatter(X, results_gr[0].point, results_gr[1].point, result_fl.point)
     plot_reconstruction_errors(X, n_in, results_gr[-1].point, result_fl.point, signature)
     plot_nestedness_images(X[:, 0].reshape(8, 8), center.reshape(8, 8), [res.point for res in results_gr], result_fl.point, signature)
-    print(f"Gr: nestedness_errors = {[subspace_error(results_gr[k].point, results_gr[k+1].point, type='angle') for k in range(len(signature) - 1)]}, time = {time_gr}")
-    print(f"Fl: nestedness_errors = {[subspace_error(result_fl.point[:, :signature[k]], result_fl.point[:, :signature[k+1]], type='angle') for k in range(len(signature) - 1)]}, time = {time_fl}")
+    plot_explained_variance(X, [res.point for res in results_gr], result_fl.point, signature)
