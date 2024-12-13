@@ -43,16 +43,19 @@ def plot_nestedness_images(image, center, U_Gr_list, U_Fl, signature):  # TODO s
     axes[1, -1].imshow(center + image)
     axes[0, 0].imshow(center)
     axes[1, 0].imshow(center)
+    for ax in axes.flatten():
+        ax.set_xticks([])
+        ax.set_yticks([])
     plt.show(block=False)
 
 
 def plot_explained_variance(X, U_Gr_list, U_Fl, signature):
     p, n = X.shape
-    U_Fl_list = [U_Fl[:, :q_k] for q_k in signature] + [np.eye(p)]
-    U_Gr_list = U_Gr_list + [np.eye(p)]
+    U_Fl_list = [np.zeros((p, p))] + [U_Fl[:, :q_k] for q_k in signature] + [np.eye(p)]
+    U_Gr_list = [np.zeros((p, p))] + U_Gr_list + [np.eye(p)]
     plt.figure()
-    plt.plot(signature+(p,), [np.trace(U.T @ X @ X.T @ U) / np.trace(X @ X.T) for U in U_Gr_list], label='Gr')
-    plt.plot(signature+(p,), [np.trace(U.T @ X @ X.T @ U) / np.trace(X @ X.T) for U in U_Fl_list], label='Fl')
+    plt.plot((0,)+signature+(p,), [np.trace(U.T @ X @ X.T @ U) / np.trace(X @ X.T) for U in U_Gr_list], label='Gr')
+    plt.plot((0,)+signature+(p,), [np.trace(U.T @ X @ X.T @ U) / np.trace(X @ X.T) for U in U_Fl_list], label='Fl')
     plt.legend()
     plt.show(block=False)
 
