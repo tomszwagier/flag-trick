@@ -14,6 +14,14 @@ def subspace_error(U_true, U_found, type="angle"):
     return float(error)
 
 
+def plot_subspace_errors(U_Gr_list, U_Fl, signature):
+    plt.figure()
+    plt.plot([subspace_error(U_Gr_list[k], U_Gr_list[k+1], type='angle') for k in range(len(signature) - 1)], label="Gr")
+    plt.plot([subspace_error(U_Fl[:, :signature[k]], U_Fl[:, :signature[k+1]], type='angle') for k in range(len(signature) - 1)], label="Fl")
+    plt.legend()
+    plt.show(block=False)
+
+
 def plot_nestedness_scatter(X, U_Gr_1, U_Gr_2, U_Fl, y=None):
     n = X.shape[1]
     fig, axes = plt.subplots(nrows=2, ncols=2, sharex=True, sharey=True)

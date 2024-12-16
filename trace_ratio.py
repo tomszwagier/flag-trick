@@ -11,7 +11,7 @@ from sklearn.model_selection import StratifiedKFold
 from time import time
 
 from flag import Flag
-from utils import plot_explained_variance, plot_nestedness_images, plot_nestedness_scatter, subspace_error
+from utils import plot_explained_variance, plot_nestedness_images, plot_nestedness_scatter, subspace_error, plot_subspace_errors
 
 
 def LDA_scatter_matrices(X, y):
@@ -82,9 +82,9 @@ if __name__ == "__main__":
     # U_pca, X_pca, Sw, Sb, center = generate_lda_data(X, y)
     # (p, n), C = X.shape, len(anp.unique(y))
     #
-    # signature = (1, 2, 3, 4, 5)  #  tuple(anp.arange(1, p))
+    # signature = tuple(anp.arange(1, p))
     # q = signature[-1]
-
+    #
     # start_fl = time()
     # U_Fl = learn_Fl(p, signature, Sb, Sw, init="random")
     # time_fl = time() - start_fl
@@ -100,6 +100,7 @@ if __name__ == "__main__":
     # plot_nestedness_scatter(X, U_Gr_list[0], U_Gr_list[1], U_Fl, y=y)
     # plot_nestedness_images(X[:, 0].reshape(8, 8) - center.reshape(8, 8), anp.zeros((8, 8)), U_Gr_list, U_Fl, signature)
     # plot_explained_variance(X, U_Gr_list, U_Fl, signature)
+    # plot_subspace_errors(U_Gr_list, U_Fl, signature)
 
     # Classification
     dataset = load_breast_cancer()  # load_digits / load_iris / load_wine / fetch_olivetti_faces / load_breast_cancer
@@ -128,7 +129,7 @@ if __name__ == "__main__":
 
     w_uniform = 1 / len(signature) * anp.ones(len(signature))
     y_Fl_pred_uniform = (y_Fl_preds @ w_uniform).reshape(n, C)  # proba @ w rather?
-    print(f"Classification accuracy Fl({p, signature})", log_loss(y, y_Fl_pred_uniform))
+    print(f"Cross-Entropy Fl({p, signature})", log_loss(y, y_Fl_pred_uniform))
 
     lb = LabelBinarizer()
     lb.fit(y)
@@ -146,4 +147,4 @@ if __name__ == "__main__":
     print(w.value)
     # log_loss may cause undesirable behaviour, if so replace with squared loss
     y_Fl_pred = (y_Fl_preds @ w.value).reshape(n, C)  # proba @ w rather?
-    print(f"Classification accuracy Fl({p, signature})", log_loss(y, y_Fl_pred))
+    print(f"Cross-Entropy Fl({p, signature})", log_loss(y, y_Fl_pred))
