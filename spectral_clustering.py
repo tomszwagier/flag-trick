@@ -92,58 +92,74 @@ if __name__ == "__main__":
     anp.random.seed(42)
 
     # Nestedness
-    dataset = load_digits()  # load_digits / load_iris / load_wine / fetch_olivetti_faces / load_breast_cancer
-    X, y = dataset.data.T, dataset.target
-    X = anp.concatenate([X[:, y==c][:, :100//len(anp.unique(y))] for c in anp.unique(y)], axis=1)  # Keep 10 elements per class
-    y = anp.concatenate([y[y==c][:100//len(anp.unique(y))] for c in anp.unique(y)])
-    (p, n), C = X.shape, len(anp.unique(y))
-
-    L = normalized_graph_Laplacian(X)
-
-    signature = tuple(anp.arange(1, n))  # TODO: I must restart the experiment since I did not go until the right dimension!!! It must be n instead!!!!
-    q = signature[-1]
-    beta = 0.01
-
-    start_fl = time()
-    U_Fl = learn_Fl(n, signature, L, beta, init="random")
-    time_fl = time() - start_fl
-    U_Gr_list = []
-    start_gr = time()
-    for dim in signature:
-        U_Gr = learn_Gr(n, dim, L, beta, init="random")
-        U_Gr_list.append(U_Gr)
-    time_gr = time() - start_gr
-
-    print(f"Gr: nestedness_errors = {[subspace_error(U_Gr_list[k], U_Gr_list[k+1], type='angle') for k in range(len(signature) - 1)]}, time = {time_gr}")
-    print(f"Fl: nestedness_errors = {[subspace_error(U_Fl[:, :signature[k]], U_Fl[:, :signature[k+1]], type='angle') for k in range(len(signature) - 1)]}, time = {time_fl}")
-    plot_nestedness_scatter_SC(U_Gr_list[0], U_Gr_list[1], U_Fl, y=y)
-    plot_subspace_errors(U_Gr_list, U_Fl, signature)
-    plot_variance_SC(U_Gr_list, U_Fl, signature)
+    # dataset = load_breast_cancer()  # load_digits / load_iris / load_wine / fetch_olivetti_faces / load_breast_cancer
+    # X, y = dataset.data.T, dataset.target
+    # X = anp.concatenate([X[:, y==c][:, :100//len(anp.unique(y))] for c in anp.unique(y)], axis=1)  # 100 samples equally distributed between classes
+    # y = anp.concatenate([y[y==c][:100//len(anp.unique(y))] for c in anp.unique(y)])
+    # (p, n), C = X.shape, len(anp.unique(y))
+    #
+    # L = normalized_graph_Laplacian(X)
+    #
+    # signature = tuple(anp.arange(1, n))
+    # q = signature[-1]
+    # beta = 0.00001
+    #
+    # start_fl = time()
+    # U_Fl = learn_Fl(n, signature, L, beta, init="random")
+    # time_fl = time() - start_fl
+    # U_Gr_list = []
+    # start_gr = time()
+    # for dim in signature:
+    #     U_Gr = learn_Gr(n, dim, L, beta, init="random")
+    #     U_Gr_list.append(U_Gr)
+    # time_gr = time() - start_gr
+    #
+    # print(f"Gr: nestedness_errors = {[subspace_error(U_Gr_list[k], U_Gr_list[k+1], type='angle') for k in range(len(signature) - 1)]}, time = {time_gr}")
+    # print(f"Fl: nestedness_errors = {[subspace_error(U_Fl[:, :signature[k]], U_Fl[:, :signature[k+1]], type='angle') for k in range(len(signature) - 1)]}, time = {time_fl}")
+    # plot_nestedness_scatter_SC(U_Gr_list[0], U_Gr_list[1], U_Fl, y=y)
+    # plot_subspace_errors(U_Gr_list, U_Fl, signature)
+    # plot_variance_SC(U_Gr_list, U_Fl, signature)
 
 
     # Classification
-    dataset = load_digits()  # load_digits / load_iris / load_wine / fetch_olivetti_faces / load_breast_cancer
+    dataset = load_breast_cancer()  # load_digits / load_iris / load_wine / fetch_olivetti_faces / load_breast_cancer
     X, y = dataset.data.T, dataset.target
-    X = anp.concatenate([X[:, y==c][:, :100//len(anp.unique(y))] for c in anp.unique(y)], axis=1)  # Keep 10 elements per class
+    X = anp.concatenate([X[:, y==c][:, :100//len(anp.unique(y))] for c in anp.unique(y)], axis=1)  # 100 samples equally distributed between classes
     y = anp.concatenate([y[y==c][:100//len(anp.unique(y))] for c in anp.unique(y)])
     (p, n), C = X.shape, len(anp.unique(y))
 
     L = normalized_graph_Laplacian(X)
 
-    signature = (1, 2, 5, 10, 20)
+    signature = (1, 2, 5, 10)
     q = signature[-1]
     beta = 0.01
 
     U_Gr = learn_Gr(n, q, L, beta, init="svd")
     U_Fl = learn_Fl(n, signature, L, beta, init="svd")
 
-    clus_Gr = KMeans(n_clusters=C)
-    y_Gr_pred = clus_Gr.fit_predict(U_Gr)
-    print(f"RI Gr({p, q})", rand_score(y, y_Gr_pred))  # check if I should use better evaluation metrics! https://scikit-learn.org/stable/modules/clustering.html#clustering-performance-evaluation
+    clus_Gr = KMeans(n_clusters=C, random_state=42)
+    y_Gr_pred = clus_Gr.fit_predict(U_Gr / anp.linalg.norm(U_Gr, axis=1)[:, anp.newaxis])
+    print(f"RI Gr({n, q})", rand_score(y, y_Gr_pred))  # check if I should use better evaluation metrics! https://scikit-learn.org/stable/modules/clustering.html#clustering-performance-evaluation
 
-    y_Fl_preds = anp.zeros((n * C, len(signature)))
+    y_Fl_pred_w = anp.zeros((n, C))
+    # y_Fl_pred_u = anp.zeros((n, C))
+    weights = anp.zeros((len(signature)))
     for k, q_k in enumerate(signature):
         U_Fl_k = U_Fl[:, :q_k]
-        clus_Fl = KMeans(n_clusters=C)
-        y_Fl_pred = clus_Fl.fit_predict(U_Fl_k)
-        print(f"RI Fl({p, signature}) (q={q_k})", rand_score(y, y_Fl_pred))
+        clus_Fl = KMeans(n_clusters=C, random_state=42)
+        y_Fl_pred = clus_Fl.fit_predict(U_Fl_k / anp.linalg.norm(U_Fl_k, axis=1)[:, anp.newaxis])
+        w = rand_score(y, y_Fl_pred)
+        weights[k] = w
+        print(f"RI Fl({n, signature}) (q={q_k})", w)
+        lb = LabelBinarizer()
+        lb.fit(y_Fl_pred)
+        y_bin = lb.transform(y_Fl_pred)
+        if C == 2:
+            y_bin = anp.concatenate([1 - y_bin, y_bin], axis=1)  # 0 -> [1, 0]
+        y_Fl_pred_w = y_Fl_pred_w + w * y_bin
+        # y_Fl_pred_u = y_Fl_pred_u + 1 / len(signature) * y_bin
+    y_Fl_pred_w_max = anp.argmax(y_Fl_pred_w, axis=1)
+    print(f"RI Fl-W", rand_score(y, y_Fl_pred_w_max))
+    # y_Fl_pred_u_max = anp.argmax(y_Fl_pred_u, axis=1)
+    # print(f"RI Fl-U", rand_score(y, y_Fl_pred_u_max))
+    weights = weights / anp.sum(weights)

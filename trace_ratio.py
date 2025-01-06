@@ -139,7 +139,7 @@ if __name__ == "__main__":
     eps = anp.finfo(y_Fl_preds.dtype).eps  # / 1e-4
     proba = anp.clip(y_Fl_preds, eps, 1 - eps)  # clipping here ensures that proba @ w is clipped too...
     import cvxpy as cp
-    w = cp.Variable(len(signature))
+    w = cp.Variable(len(signature))  # TODO: CAUTION I may have done total nonsense on the definition of the objective... The second term should not exist... But well, it's probably the same quantity anyway
     objective = cp.Minimize(1 / n * (cp.sum(- (cp.multiply(y_bin.flatten(), cp.log(proba @ w)) + cp.multiply((1 - y_bin.flatten()), cp.log(1 - proba @ w))))))  # as in sklearn, we do sum on axis 1 and average on axis 0 / cp.Multiply?
     constraints = [cp.sum(w) == 1, w >= 0]
     problem = cp.Problem(objective, constraints)
