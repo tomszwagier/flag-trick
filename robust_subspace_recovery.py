@@ -3,7 +3,7 @@ matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 import autograd.numpy as anp
 import pymanopt
-from sklearn.datasets import load_digits, load_iris, fetch_olivetti_faces
+from sklearn.datasets import load_digits, load_iris
 # from skimage.transform import resize
 from time import time
 
@@ -29,20 +29,6 @@ def digits(n_in, n_out, model="0vsOther"):
         X_7 = data_X[digits.target == 7].T
         X_in = X_1[:, anp.random.choice(X_1.shape[1], n_in, replace=False)]
         X_out = X_7[:, anp.random.choice(X_7.shape[1], n_out, replace=False)]
-    # elif model == "DigitvsFace":
-    #     X_in = data_X[anp.random.choice(data_X.shape[0], n_in, replace=False)].T
-    #     faces = fetch_olivetti_faces(return_X_y=True)[0]
-    #     X_out = []
-    #     print(faces.shape[0])
-    #     for im in faces[anp.random.choice(faces.shape[0], n_out, replace=False)]:
-    #         X_out.append(resize(im, (8, 8)).flatten())
-    #     X_out = anp.array(X_out).T
-    # elif model == "FacevsOther":
-    #     faces, labels = fetch_olivetti_faces(return_X_y=True)
-    #     faces = anp.array([resize(im.reshape(64, 64), (8, 8)).flatten() for im in faces])
-    #     X_in = faces[labels==0][anp.random.choice(anp.sum(labels==0), n_in, replace=False)]
-    #     X_out = faces[labels!=0][anp.random.choice(anp.sum(labels!=0), n_out, replace=False)]
-    #     X_in, X_out = anp.array(X_in).T, anp.array(X_out).T
     X, y = anp.concatenate([X_in, X_out], axis=1), anp.array([0] * n_in + [1] * n_out)
     center = anp.mean(X_in, axis=1)[:, anp.newaxis]
     X = X - center  # anp.median(X, axis=1)[:, anp.newaxis]
