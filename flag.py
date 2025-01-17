@@ -86,10 +86,11 @@ class Flag(_FlagBase):
     def euclidean_to_riemannian_hessian(self, point, euclidean_gradient, euclidean_hessian, tangent_vector):
         raise NotImplementedError()
 
-    def retraction(self, point, tangent_vector):
-        return self.exp(point, tangent_vector)  # self.flag.metric.exp(tangent_vec, base_point)
-        # u, _, vt = anp.linalg.svd(point + tangent_vector, full_matrices=False)
-        # return u @ vt
+    def retraction(self, point, tangent_vector):  # "The SVD approach is preferable in practice because of its stability." Zhu et al
+        u, _, vt = anp.linalg.svd(point + tangent_vector, full_matrices=False)  # would not be the same shapes with full_matrices=True
+        return u @ vt
+        # return anp.linalg.qr(point + tangent_vector, mode='reduced')[0]
+        # return self.exp(point, tangent_vector)
 
     def random_point(self):
         raise NotImplementedError()
@@ -101,8 +102,11 @@ class Flag(_FlagBase):
         point_completion = anp.concatenate([point, anp.linalg.svd(point, full_matrices=True, compute_uv=True)[0][:, self._q:]], axis=1)
         B = anp.zeros_like(point_completion)
         B[:, :self._q] = point_completion.T @ tangent_vector
-        B[:, self._q:] = anp.concatenate([- B[self._q:, :self._q].T, anp.zeros((self._p - self._q, self._p - self._q))])
-        return point_completion @ expm(B) @ anp.eye(self._p, self._q)
+        B[:, self._q:] = anp.concatenate([- B[self._q:, :self._q].T, anp.zeros((self._p - self._q, self._p - self._q))], axis=0)
+        B = (B - B.T) / 2  # for numerical stability
+        # return point_completion @ expm(B)[:, :self._q]
+        u, _, vt = anp.linalg.svd(point_completion @ expm(B))
+        return u @ vt[:, :self._q]  # for numerical stability, we project orthogonally
 
     def log(self, point_a, point_b):
         raise NotImplementedError()

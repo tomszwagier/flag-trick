@@ -25,7 +25,6 @@ def plot_subspace_errors(U_Gr_list, U_Fl, signature):
 def plot_nestedness_scatter(X, U_Gr_1, U_Gr_2, U_Fl, y=None):
     n = X.shape[1]
     fig, axes = plt.subplots(nrows=2, ncols=2, sharex=True, sharey=True)
-    plt.set_cmap("Accent")
     X_subspace_1 = U_Gr_1.T @ X
     axes[0, 0].scatter(X_subspace_1, np.zeros(n,), c='tab:red' if y is None else y, alpha=.5)
     axes[0, 0].set_title('Subspace - 1D')

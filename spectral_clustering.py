@@ -17,6 +17,21 @@ from flag import Flag
 from utils import subspace_error, plot_subspace_errors
 
 
+def synthetic(n):
+    outer_circ = anp.array([anp.cos(anp.linspace(0, anp.pi, n//2)), anp.sin(anp.linspace(0, anp.pi, n//2)), anp.zeros(n//2)]) + anp.random.normal(scale=.1, size=(3, n//2))
+    inner_circ = anp.array([1 - anp.cos(anp.linspace(0, anp.pi, n//2)), 1 - anp.sin(anp.linspace(0, anp.pi, n//2)) - 2, anp.zeros(n//2)]) + anp.random.normal(scale=.1, size=(3, n//2))
+    X, y = anp.concatenate([outer_circ, inner_circ], axis=1), anp.array(([0] * (n//2)) + ([1] * (n//2)))
+    X = X - anp.mean(X, axis=1)[:, anp.newaxis]
+    fig = plt.figure(figsize=(7, 7))
+    cmap = matplotlib.cm.get_cmap('tab20c')
+    colors = cmap(anp.unique(y)/5)
+    ax1 = fig.add_subplot(111, projection='3d')
+    ax1.scatter(*X, alpha=.5, c=colors[y])
+    plt.axis('off')
+    plt.show(block=False)
+    return X, y
+
+
 def normalized_graph_Laplacian(X):
     pairwise_dist = euclidean_distances(X.T, X.T, squared=False)
     W = anp.exp(- pairwise_dist**2 / (2 * anp.median(pairwise_dist)**2))
@@ -27,7 +42,7 @@ def normalized_graph_Laplacian(X):
 
 def learn_Gr(n, q, L, beta, init="random"):
     init_point = {"random": pymanopt.manifolds.grassmann.Grassmann(n, q).random_point(), "svd": anp.linalg.svd(L, full_matrices=True, compute_uv=True)[0][:, -q:]}  # initialize with smallest eigenvectors of L, but change to largest eigenvectors of W if this does not work well, to do like in GSC
-    grassmann = Flag(n, (q,))
+    grassmann = Flag(n, (q,))  # pymanopt.manifolds.grassmann.Grassmann(n, q) to compare but we should keep flags class to have the same retraction between the methods we compare...
 
     @pymanopt.function.autograd(grassmann)
     def cost_gr(point):
@@ -60,7 +75,6 @@ def learn_Fl(n, signature, L, beta, init="random"):
 def plot_nestedness_scatter_SC(U_Gr_1, U_Gr_2, U_Fl, y=None):
     n = U_Gr_1.shape[0]
     fig, axes = plt.subplots(nrows=2, ncols=2, sharex=True, sharey=True)
-    plt.set_cmap("Accent")
     axes[0, 0].scatter(U_Gr_1[:, 0], anp.zeros(n,), c='tab:red' if y is None else y, alpha=.8)
     axes[0, 0].set_title('Subspace - 1D')
     axes[1, 0].scatter(U_Gr_2[:, 0], U_Gr_2[:, 1], c='tab:red' if y is None else y, alpha=.8)
@@ -68,6 +82,17 @@ def plot_nestedness_scatter_SC(U_Gr_1, U_Gr_2, U_Fl, y=None):
     axes[0, 1].scatter(U_Fl[:, 0], anp.zeros(n,), c='tab:green' if y is None else y, alpha=.8)
     axes[0, 1].set_title('Flag - 1D')
     axes[1, 1].scatter(U_Fl[:, 0], U_Fl[:, 1], c='tab:green' if y is None else y, alpha=.8)
+    axes[1, 1].set_title('Flag - 2D')
+    plt.show(block=False)
+    fig, axes = plt.subplots(nrows=2, ncols=2, sharex=True, sharey=True)
+    plt.set_cmap("Accent")
+    axes[0, 0].scatter(U_Gr_1/anp.linalg.norm(U_Gr_1, axis=1)[:, anp.newaxis], anp.zeros(n,), c='tab:red' if y is None else y, alpha=.8)
+    axes[0, 0].set_title('Subspace - 1D')
+    axes[1, 0].scatter(*(U_Gr_2/anp.linalg.norm(U_Gr_2, axis=1)[:, anp.newaxis]).T, c='tab:red' if y is None else y, alpha=.8)
+    axes[1, 0].set_title('Subspace - 2D')
+    axes[0, 1].scatter(U_Fl[:, :1]/anp.linalg.norm(U_Fl[:, :1], axis=1)[:, anp.newaxis], anp.zeros(n,), c='tab:green' if y is None else y, alpha=.8)
+    axes[0, 1].set_title('Flag - 1D')
+    axes[1, 1].scatter(*(U_Fl[:, :2]/anp.linalg.norm(U_Fl[:, :2], axis=1)[:, anp.newaxis]).T, c='tab:green' if y is None else y, alpha=.8)
     axes[1, 1].set_title('Flag - 2D')
     plt.show(block=False)
 
@@ -92,31 +117,34 @@ if __name__ == "__main__":
     anp.random.seed(42)
 
     # Nestedness
-    dataset = load_breast_cancer()  # load_digits / load_iris / load_wine / fetch_olivetti_faces / load_breast_cancer
-    X, y = dataset.data.T, dataset.target
-    X = anp.concatenate([X[:, y==c][:, :100//len(anp.unique(y))] for c in anp.unique(y)], axis=1)  # 100 samples equally distributed between classes
-    y = anp.concatenate([y[y==c][:100//len(anp.unique(y))] for c in anp.unique(y)])
+    # dataset = load_breast_cancer()  # load_digits / load_iris / load_wine / fetch_olivetti_faces / load_breast_cancer
+    # X, y = dataset.data.T, dataset.target
+    # X = anp.concatenate([X[:, y==c][:, :100//len(anp.unique(y))] for c in anp.unique(y)], axis=1)  # 100 samples equally distributed between classes
+    # y = anp.concatenate([y[y==c][:100//len(anp.unique(y))] for c in anp.unique(y)])
+    X, y = synthetic(n=100)
     (p, n), C = X.shape, len(anp.unique(y))
 
     L = normalized_graph_Laplacian(X)
 
-    signature = tuple(anp.arange(1, n))
+    signature = (1, 2)  # tuple(anp.arange(1, n))
     q = signature[-1]
-    beta = 0.00001
+    beta = 0.01
 
-    # start_fl = time()
-    # U_Fl = learn_Fl(n, signature, L, beta, init="random")
-    # time_fl = time() - start_fl
-    # U_Gr_list = []
-    # start_gr = time()
-    # for dim in signature:
-    #     U_Gr = learn_Gr(n, dim, L, beta, init="random")
-    #     U_Gr_list.append(U_Gr)
-    # time_gr = time() - start_gr
-    #
-    # print(f"Gr: nestedness_errors = {[subspace_error(U_Gr_list[k], U_Gr_list[k+1], type='angle') for k in range(len(signature) - 1)]}, time = {time_gr}")
-    # print(f"Fl: nestedness_errors = {[subspace_error(U_Fl[:, :signature[k]], U_Fl[:, :signature[k+1]], type='angle') for k in range(len(signature) - 1)]}, time = {time_fl}")
-    # plot_nestedness_scatter_SC(U_Gr_list[0], U_Gr_list[1], U_Fl, y=y)
+    start_fl = time()
+    U_Fl = learn_Fl(n, signature, L, beta, init="random")
+    time_fl = time() - start_fl
+    U_Gr_list = []
+    start_gr = time()
+    for dim in signature:
+        U_Gr = learn_Gr(n, dim, L, beta, init="random")
+        U_Gr_list.append(U_Gr)
+    time_gr = time() - start_gr
+
+    print(f"Gr: nestedness_errors = {[subspace_error(U_Gr_list[k], U_Gr_list[k+1], type='angle') for k in range(len(signature) - 1)]}, time = {time_gr}")
+    print(f"Fl: nestedness_errors = {[subspace_error(U_Fl[:, :signature[k]], U_Fl[:, :signature[k+1]], type='angle') for k in range(len(signature) - 1)]}, time = {time_fl}")
+    cmap = matplotlib.cm.get_cmap('tab20c')
+    colors = cmap(anp.unique(y)/5)
+    plot_nestedness_scatter_SC(U_Gr_list[0], U_Gr_list[1], U_Fl, y=colors[y])
     # plot_subspace_errors(U_Gr_list, U_Fl, signature)
     # plot_variance_SC(U_Gr_list, U_Fl, signature)
 
