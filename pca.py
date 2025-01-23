@@ -1,1 +1,0 @@
-# TODO: some basic experiments to show that the optimization algo learns well: PCA (at minimum), Robust Subspace Recovery with simple generative models, LDA on some classical examples etc.

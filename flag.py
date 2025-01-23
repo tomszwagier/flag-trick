@@ -87,13 +87,14 @@ class Flag(_FlagBase):
         raise NotImplementedError()
 
     def retraction(self, point, tangent_vector):  # "The SVD approach is preferable in practice because of its stability." Zhu et al
-        u, _, vt = anp.linalg.svd(point + tangent_vector, full_matrices=False)  # would not be the same shapes with full_matrices=True
+        u, _, vt = anp.linalg.svd(point + tangent_vector, full_matrices=False)
         return u @ vt
         # return anp.linalg.qr(point + tangent_vector, mode='reduced')[0]
         # return self.exp(point, tangent_vector)
 
     def random_point(self):
-        raise NotImplementedError()
+        u, _, vt = anp.linalg.svd(anp.random.normal(size=(self._p, self._q)), full_matrices=False)  # replace with qr if I wanna do like pymanopt... but wrong I think...
+        return u @ vt
 
     def random_tangent_vector(self, point):
         raise NotImplementedError()

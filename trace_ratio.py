@@ -1,60 +1,15 @@
-import matplotlib
-from sklearn.metrics import accuracy_score, log_loss
-from sklearn.neighbors import KNeighborsClassifier
-matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 import autograd.numpy as anp
 import pymanopt
-from sklearn.datasets import load_digits, load_iris, fetch_olivetti_faces, load_breast_cancer, load_wine
-from sklearn.preprocessing import LabelBinarizer
-from sklearn.model_selection import StratifiedKFold
+from sklearn.datasets import load_digits
 from time import time
 
+from data import synthetic_tr_rings
 from flag import Flag
-from utils import plot_explained_variance, plot_nestedness_images, plot_nestedness_scatter, subspace_error, plot_subspace_errors
+from utils import plot_explained_variance, plot_nestedness_scatter, subspace_distance, plot_subspace_distances
 
 
-def synthetic(n):
-    X_1 = anp.random.multivariate_normal(anp.array([-1, -1, 0]), .1 * anp.diag([1, 1, 10]), size=n//5).T
-    X_2 = anp.random.multivariate_normal(anp.array([+1, -1, 0]), .1 * anp.diag([1, 1, 10]), size=n//5).T
-    X_3 = anp.random.multivariate_normal(anp.array([-2, +1, 0]), .1 * anp.diag([1, 1, 10]), size=n//5).T
-    X_4 = anp.random.multivariate_normal(anp.array([+0, +1, 0]), .1 * anp.diag([1, 1, 10]), size=n//5).T
-    X_5 = anp.random.multivariate_normal(anp.array([+2, +1, 0]), .1 * anp.diag([1, 1, 10]), size=n//5).T
-    X, y = anp.concatenate([X_1, X_2, X_3, X_4, X_5], axis=1), anp.array(([0] * (n//5)) + ([1] * (n//5)) + ([2] * (n//5)) + ([3] * (n//5)) + ([4] * (n//5)))
-    X = X - anp.mean(X, axis=1)[:, anp.newaxis]
-    fig = plt.figure(figsize=(7, 7))
-    cmap = matplotlib.cm.get_cmap('tab20c')
-    colors = cmap(anp.unique(y)/10)
-    ax1 = fig.add_subplot(111, projection='3d')
-    ax1.scatter(*X, alpha=.5, c=colors[y])
-    plt.axis('equal')
-    plt.axis('off')
-    plt.show(block=False)
-    return X, y
-
-
-def synthetic(n):
-    ring = anp.array([anp.cos(anp.linspace(0, 2 * anp.pi, n//5)), anp.sin(anp.linspace(0, 2 * anp.pi, n//5)), anp.zeros(n//5)])
-    X_1 = anp.array([-1, -.5, 0])[:, anp.newaxis] + ring/2 + anp.array([anp.random.normal(scale=.1, size=n//5), anp.random.normal(scale=.1, size=n//5), anp.random.normal(scale=.5, size=n//5)])
-    X_2 = anp.array([+1, -.5, 0])[:, anp.newaxis] + ring/2 + anp.array([anp.random.normal(scale=.1, size=n//5), anp.random.normal(scale=.1, size=n//5), anp.random.normal(scale=.5, size=n//5)])
-    X_3 = anp.array([-2, +.5, 0])[:, anp.newaxis] + ring/2 + anp.array([anp.random.normal(scale=.1, size=n//5), anp.random.normal(scale=.1, size=n//5), anp.random.normal(scale=.5, size=n//5)])
-    X_4 = anp.array([+0, +.5, 0])[:, anp.newaxis] + ring/2 + anp.array([anp.random.normal(scale=.1, size=n//5), anp.random.normal(scale=.1, size=n//5), anp.random.normal(scale=.5, size=n//5)])
-    X_5 = anp.array([+2, +.5, 0])[:, anp.newaxis] + ring/2 + anp.array([anp.random.normal(scale=.1, size=n//5), anp.random.normal(scale=.1, size=n//5), anp.random.normal(scale=.5, size=n//5)])
-    X, y = anp.concatenate([X_1, X_2, X_3, X_4, X_5], axis=1), anp.array(([0] * (n//5)) + ([1] * (n//5)) + ([2] * (n//5)) + ([3] * (n//5)) + ([4] * (n//5)))
-    print(X.shape)
-    X = X - anp.mean(X, axis=1)[:, anp.newaxis]
-    fig = plt.figure(figsize=(7, 7))
-    cmap = matplotlib.cm.get_cmap('tab20c')
-    colors = cmap(anp.unique(y)/10)
-    ax1 = fig.add_subplot(111, projection='3d')
-    ax1.scatter(*X, alpha=.5, c=colors[y])
-    plt.axis('equal')
-    plt.axis('off')
-    plt.show(block=False)
-    return X, y
-
-
-def LDA_scatter_matrices(X, y):
+def lda_scatter_matrices(X, y):
     X_list = [X[:, y==c] for c in list(anp.unique(y))]
     mu_list = [anp.mean(X_c, axis=1)[:, anp.newaxis] for X_c in X_list]
     n_list = [X_c.shape[1] for X_c in X_list]
@@ -64,41 +19,26 @@ def LDA_scatter_matrices(X, y):
     return Sw, Sb
 
 
-def generate_lda_data(X, y):
+def generate_lda_data(X, y):  # use same preprocessing as in [ngo_trace_2012]
     center = anp.mean(X, axis=1)[:, anp.newaxis]
     X = X - center
     p, n = X.shape
     C = len(anp.unique(y))
-    U_pca = anp.linalg.svd(X, full_matrices=True, compute_uv=True)[0][:, :min(n-C, p)]
-    if n-C < p:
+    U_pca = anp.linalg.svd(X, full_matrices=True, compute_uv=True)[0][:, :min(n - C, p)]
+    if n - C < p:
         print("CAUTION: PCA done")
     X_pca = U_pca.T @ X
-    Sw, Sb = LDA_scatter_matrices(X_pca, y)
-    Sw = Sw + 10 ** (-5) * anp.trace(Sw) * anp.eye(X_pca.shape[0])  # regularization as in [Ngo2012]
-    Sb = Sb + 10 ** (-5) * anp.trace(Sb) * anp.eye(X_pca.shape[0])  # regularization as in [Ngo2012]
+    Sw, Sb = lda_scatter_matrices(X_pca, y)
+    Sw = Sw + 10 ** (-5) * anp.trace(Sw) * anp.eye(X_pca.shape[0])
+    Sb = Sb + 10 ** (-5) * anp.trace(Sb) * anp.eye(X_pca.shape[0])
     Sw /= anp.trace(Sw)
     Sb /= anp.trace(Sb)
     return U_pca, X_pca, Sw, Sb, center
 
 
-def learn_Gr(p, q, Sb, Sw, init="random"):
-    init_point = {"random": pymanopt.manifolds.grassmann.Grassmann(p, q).random_point(), "svd": anp.linalg.svd(Sb, full_matrices=True, compute_uv=True)[0][:, :q]}
-    grassmann = Flag(p, (q,))
-
-    @pymanopt.function.autograd(grassmann)
-    def cost_gr(point):
-        return - anp.trace(point.T @ Sb @ point) / anp.trace(point.T @ Sw @ point)
-
-    problem_gr = pymanopt.Problem(grassmann, cost_gr)
-    optimizer_gr = pymanopt.optimizers.SteepestDescent(verbosity=0)
-    result_gr = optimizer_gr.run(problem_gr, initial_point=init_point[init])
-    return result_gr.point
-
-
-def learn_Fl(p, signature, Sb, Sw, init="random"):
-    q = signature[-1]
-    init_point = {"random": pymanopt.manifolds.grassmann.Grassmann(p, q).random_point(), "svd": anp.linalg.svd(Sb, full_matrices=True, compute_uv=True)[0][:, :q]}
+def learn(p, signature, Sb, Sw, init="random"):
     flag = Flag(p, signature)
+    init_point = {"random": flag.random_point(), "svd": anp.linalg.svd(Sb, full_matrices=True, compute_uv=True)[0][:, :signature[-1]]}
 
     @pymanopt.function.autograd(flag)
     def cost_fl(point):
@@ -116,93 +56,33 @@ def learn_Fl(p, signature, Sb, Sw, init="random"):
 if __name__ == "__main__":
     anp.random.seed(42)
 
-    # Nestedness
-    # dataset = load_digits()  # load_digits / load_iris / load_wine / fetch_olivetti_faces / load_breast_cancer
-    # X, y = dataset.data.T, dataset.target
-    X, y = synthetic(n=1000)
-    U_pca, X_pca, Sw, Sb, center = generate_lda_data(X, y)
+    dataset = load_digits()
+    X, y = dataset.data.T, dataset.target
     (p, n), C = X.shape, len(anp.unique(y))
-
-    signature = (1, 2)  # tuple(anp.arange(1, p))
+    signature = tuple(anp.arange(1, p))
     q = signature[-1]
 
+    X, y = synthetic_tr_rings(n=200)
+    (p, n), C = X.shape, len(anp.unique(y))
+    signature = (1, 2)
+    q = signature[-1]
+
+    U_pca, X_pca, Sw, Sb, center = generate_lda_data(X, y)
+
     start_fl = time()
-    U_Fl = learn_Fl(p, signature, Sb, Sw, init="random")
+    U_Fl = learn(p, signature, Sb, Sw, init="random")
     time_fl = time() - start_fl
-    U_Gr_list = []
     start_gr = time()
+    U_Gr_list = []
     for dim in signature:
-        U_Gr = learn_Gr(p, dim, Sb, Sw, init="random")
+        U_Gr = learn(p, (dim,), Sb, Sw, init="random")
         U_Gr_list.append(U_Gr)
     time_gr = time() - start_gr
 
-    print(f"Gr: nestedness_errors = {[subspace_error(U_Gr_list[k], U_Gr_list[k+1], type='angle') for k in range(len(signature) - 1)]}, time = {time_gr}")
-    print(f"Fl: nestedness_errors = {[subspace_error(U_Fl[:, :signature[k]], U_Fl[:, :signature[k+1]], type='angle') for k in range(len(signature) - 1)]}, time = {time_fl}")
-    cmap = matplotlib.cm.get_cmap('tab20c')
+    print(f"Gr: nestedness_errors = {[subspace_distance(U_Gr_list[k], U_Gr_list[k+1]) for k in range(len(signature) - 1)]}, time = {time_gr}")
+    print(f"Fl: nestedness_errors = {[subspace_distance(U_Fl[:, :signature[k]], U_Fl[:, :signature[k+1]]) for k in range(len(signature) - 1)]}, time = {time_fl}")
+    cmap = plt.get_cmap('tab20c')
     colors = cmap(anp.unique(y)/10)
     plot_nestedness_scatter(X, U_Gr_list[0], U_Gr_list[1], U_Fl, y=colors[y])
-    # plot_nestedness_images(X[:, 0].reshape(8, 8) - center.reshape(8, 8), anp.zeros((8, 8)), U_Gr_list, U_Fl, signature)
-    # plot_explained_variance(X, U_Gr_list, U_Fl, signature)
-    # plot_subspace_errors(U_Gr_list, U_Fl, signature)
-
-    # fig = plt.figure(figsize=(7, 7))
-    # ax1 = fig.add_subplot(111, projection='3d')
-    # ax1.scatter(*X, alpha=0.5, c=y, label='data')
-    # lim = anp.max(anp.abs(X)); ax1.set_xlim3d(-lim, lim); ax1.set_ylim3d(-lim, lim); ax1.set_zlim3d(-lim, lim)
-    #
-    # mu = anp.zeros(3)
-    # ax1.quiver(*mu, *U_Gr_list[0][:, 0], color='tab:red', length=1, linewidth=5, alpha=1, label='1D - Subspace')
-    # ax1.quiver(*mu, *U_Gr_list[1][:, 0], color='tab:red', length=1, linewidth=5, alpha=.5, label='2D - Subspace')
-    # ax1.quiver(*mu, *U_Gr_list[1][:, 1], color='tab:red', length=1, linewidth=5, alpha=.5, label='2D - Subspace')
-    # ax1.quiver(*mu, *U_Fl[:, 0], color='tab:green', length=1, linewidth=5, alpha=1, label='1D - Flag')
-    # ax1.quiver(*mu, *U_Fl[:, 1], color='tab:green', length=1, linewidth=5, alpha=.5, label='2D - Flag')
-    # ax1.legend()
-    # plt.axis('off')
-    # plt.show()
-
-    # Classification
-    # dataset = load_breast_cancer()  # load_digits / load_iris / load_wine / fetch_olivetti_faces / load_breast_cancer
-    # X, y = dataset.data.T, dataset.target
-    # U_pca, X_pca, Sw, Sb, center = generate_lda_data(X, y)
-    # (p, n), C = X.shape, len(anp.unique(y))
-    # signature = (1, 2, 5)  #  tuple(anp.arange(1, p))
-    # q = signature[-1]
-    # U_Gr = learn_Gr(p, q, Sb, Sw, init="svd")
-    # U_Fl = learn_Fl(p, signature, Sb, Sw, init="svd")
-    #
-    # X_Gr = U_Gr.T @ X_pca
-    # clf_Gr = KNeighborsClassifier(n_neighbors=5)
-    # clf_Gr.fit(X_Gr.T, y)
-    # y_Gr_pred = clf_Gr.predict_proba(X_Gr.T)
-    # print(f"Classification accuracy Gr({p, q})", log_loss(y, y_Gr_pred))
-    #
-    # y_Fl_preds = anp.zeros((n * C, len(signature)))
-    # for k, q_k in enumerate(signature):
-    #     X_Fl_k = U_Fl[:, :q_k].T @ X_pca
-    #     clf_Fl = KNeighborsClassifier(n_neighbors=5)
-    #     clf_Fl.fit(X_Fl_k.T, y)
-    #     y_Fl_pred = clf_Fl.predict_proba(X_Fl_k.T)
-    #     print(log_loss(y, y_Fl_pred))
-    #     y_Fl_preds[:, k] = y_Fl_pred.flatten()
-    #
-    # w_uniform = 1 / len(signature) * anp.ones(len(signature))
-    # y_Fl_pred_uniform = (y_Fl_preds @ w_uniform).reshape(n, C)  # proba @ w rather?
-    # print(f"Cross-Entropy Fl({p, signature})", log_loss(y, y_Fl_pred_uniform))
-    #
-    # lb = LabelBinarizer()
-    # lb.fit(y)
-    # y_bin = lb.transform(y)
-    # if C == 2:
-    #     y_bin = anp.concatenate([1 - y_bin, y_bin], axis=1)  # 0 -> [1, 0]
-    # eps = anp.finfo(y_Fl_preds.dtype).eps  # / 1e-4
-    # proba = anp.clip(y_Fl_preds, eps, 1 - eps)  # clipping here ensures that proba @ w is clipped too...
-    # import cvxpy as cp
-    # w = cp.Variable(len(signature))  # TODO: CAUTION I may have done total nonsense on the definition of the objective... The second term should not exist... But well, it's probably the same quantity anyway
-    # objective = cp.Minimize(1 / n * (cp.sum(- (cp.multiply(y_bin.flatten(), cp.log(proba @ w)) + cp.multiply((1 - y_bin.flatten()), cp.log(1 - proba @ w))))))  # as in sklearn, we do sum on axis 1 and average on axis 0 / cp.Multiply?
-    # constraints = [cp.sum(w) == 1, w >= 0]
-    # problem = cp.Problem(objective, constraints)
-    # result = problem.solve()
-    # print(w.value)
-    # # log_loss may cause undesirable behaviour, if so replace with squared loss
-    # y_Fl_pred = (y_Fl_preds @ w.value).reshape(n, C)  # proba @ w rather?
-    # print(f"Cross-Entropy Fl({p, signature})", log_loss(y, y_Fl_pred))
+    plot_explained_variance(X, U_Gr_list, U_Fl, signature)
+    plot_subspace_distances(U_Gr_list, U_Fl, signature)
