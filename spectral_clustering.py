@@ -8,7 +8,7 @@ from time import time
 
 from data import synthetic_sc_moon
 from flag import Flag
-from utils import subspace_distance, plot_subspace_distances, plot_nestedness_scatter_sc
+from utils import subspace_distance, plot_subspace_distances, plot_nestedness_scatter_sc, plot_scatter_3D
 
 
 def normalized_graph_Laplacian(X):
@@ -47,10 +47,10 @@ if __name__ == "__main__":
     signature = tuple(anp.arange(1, n))
     q = signature[-1]
 
-    X, y = synthetic_sc_moon(n=100)
-    (p, n), C = X.shape, len(anp.unique(y))
-    signature = (1, 2)
-    q = signature[-1]
+    # X, y = synthetic_sc_moon(n=100)
+    # (p, n), C = X.shape, len(anp.unique(y))
+    # signature = (1, 2)
+    # q = signature[-1]
 
     L = normalized_graph_Laplacian(X)
     beta = 0.01
@@ -68,6 +68,7 @@ if __name__ == "__main__":
     print(f"Gr: nestedness_errors = {[subspace_distance(U_Gr_list[k], U_Gr_list[k+1]) for k in range(len(signature) - 1)]}, time = {time_gr}")
     print(f"Fl: nestedness_errors = {[subspace_distance(U_Fl[:, :signature[k]], U_Fl[:, :signature[k+1]]) for k in range(len(signature) - 1)]}, time = {time_fl}")
     cmap = plt.get_cmap('tab20c')
-    colors = cmap(anp.unique(y)/5)
+    colors = cmap(anp.array([0, 4, 8, 12, 16, 1, 5, 9, 13, 17, 2, 6, 10, 14, 18, 3, 7, 11, 15, 19]))  # issue if more than 20 classes
     plot_nestedness_scatter_sc(U_Gr_list[0], U_Gr_list[1], U_Fl, y=colors[y])
     plot_subspace_distances(U_Gr_list, U_Fl, signature)
+    # plot_scatter_3D(X, y, U_Gr_list=None, U_Fl=None)

@@ -5,7 +5,7 @@ from time import time
 
 from data import digits_rsr, synthetic_rsr
 from flag import Flag
-from utils import plot_nestedness_scatter, subspace_distance, plot_reconstruction_errors
+from utils import plot_nestedness_scatter, subspace_distance, plot_reconstruction_errors, plot_scatter_3D
 
 
 def learn(p, signature, X, init="random"):
@@ -52,6 +52,7 @@ if __name__ == "__main__":
     print(f"Gr: nestedness_errors = {[subspace_distance(U_Gr_list[k], U_Gr_list[k+1]) for k in range(len(signature) - 1)]}, time = {time_gr}")
     print(f"Fl: nestedness_errors = {[subspace_distance(U_Fl[:, :signature[k]], U_Fl[:, :signature[k+1]]) for k in range(len(signature) - 1)]}, time = {time_fl}")
     cmap = plt.get_cmap('tab20c')
-    colors = cmap(anp.unique(y)/5)
+    colors = cmap(anp.array([0, 4, 8, 12, 16, 1, 5, 9, 13, 17, 2, 6, 10, 14, 18, 3, 7, 11, 15, 19]))  # issue if more than 20 classes
     plot_nestedness_scatter(X, U_Gr_list[0], U_Gr_list[1], U_Fl, y=colors[y])
     plot_reconstruction_errors(X, n_in, U_Gr_list[-1], U_Fl, signature)
+    # plot_scatter_3D(X, y, U_Gr_list=None, U_Fl=None)
