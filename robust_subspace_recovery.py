@@ -28,13 +28,13 @@ def learn(p, signature, X, init="random"):
 if __name__ == "__main__":
     anp.random.seed(42)
 
-    # n_in, n_out = 450, 50
-    # X, y = synthetic_rsr(n_in, n_out)
-    # signature = (1, 2)
+    n_in, n_out = 450, 50
+    X, y = synthetic_rsr(n_in, n_out)
+    signature = (1, 2)
 
-    n_in, n_out = 90, 10
-    X, y, center = digits_rsr(n_in, n_out)
-    signature = (1, 2, 5)
+    # n_in, n_out = 90, 10
+    # X, y, center = digits_rsr(n_in, n_out)
+    # signature = (1, 2, 5)
 
     p, n = X.shape
     q = signature[-1]
@@ -55,4 +55,4 @@ if __name__ == "__main__":
     colors = cmap(anp.array([0, 4, 8, 12, 16, 1, 5, 9, 13, 17, 2, 6, 10, 14, 18, 3, 7, 11, 15, 19]))  # issue if more than 20 classes
     plot_nestedness_scatter(X, U_Gr_list[0], U_Gr_list[1], U_Fl, y=colors[y])
     plot_reconstruction_errors(X, n_in, U_Gr_list[-1], U_Fl, signature)
-    # plot_scatter_3D(X, y, U_Gr_list=None, U_Fl=None)
+    plot_scatter_3D(X, y, U_Gr_list=U_Gr_list, U_Fl=U_Fl, length=8)

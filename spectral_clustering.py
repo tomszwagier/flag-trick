@@ -39,18 +39,18 @@ def learn(n, signature, L, beta, init="random"):
 if __name__ == "__main__":
     anp.random.seed(42)
 
-    dataset = load_breast_cancer()
-    X, y = dataset.data.T, dataset.target
-    X = anp.concatenate([X[:, y==c][:, :100//len(anp.unique(y))] for c in anp.unique(y)], axis=1)  # 100 samples equally distributed between classes
-    y = anp.concatenate([y[y==c][:100//len(anp.unique(y))] for c in anp.unique(y)])
-    (p, n), C = X.shape, len(anp.unique(y))
-    signature = tuple(anp.arange(1, n))
-    q = signature[-1]
-
-    # X, y = synthetic_sc_moon(n=100)
+    # dataset = load_breast_cancer()
+    # X, y = dataset.data.T, dataset.target
+    # X = anp.concatenate([X[:, y==c][:, :100//len(anp.unique(y))] for c in anp.unique(y)], axis=1)  # 100 samples equally distributed between classes
+    # y = anp.concatenate([y[y==c][:100//len(anp.unique(y))] for c in anp.unique(y)])
     # (p, n), C = X.shape, len(anp.unique(y))
-    # signature = (1, 2)
+    # signature = tuple(anp.arange(1, n))
     # q = signature[-1]
+
+    X, y = synthetic_sc_moon(n=100)
+    (p, n), C = X.shape, len(anp.unique(y))
+    signature = (1, 2)
+    q = signature[-1]
 
     L = normalized_graph_Laplacian(X)
     beta = 0.01
@@ -70,5 +70,5 @@ if __name__ == "__main__":
     cmap = plt.get_cmap('tab20c')
     colors = cmap(anp.array([0, 4, 8, 12, 16, 1, 5, 9, 13, 17, 2, 6, 10, 14, 18, 3, 7, 11, 15, 19]))  # issue if more than 20 classes
     plot_nestedness_scatter_sc(U_Gr_list[0], U_Gr_list[1], U_Fl, y=colors[y])
-    plot_subspace_distances(U_Gr_list, U_Fl, signature)
-    # plot_scatter_3D(X, y, U_Gr_list=None, U_Fl=None)
+    # plot_subspace_distances(U_Gr_list, U_Fl, signature)
+    plot_scatter_3D(X, y, U_Gr_list=None, U_Fl=None)

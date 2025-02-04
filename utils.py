@@ -117,7 +117,7 @@ def plot_nestedness_scatter_sc(U_Gr_1, U_Gr_2, U_Fl, y=None):
     plt.show(block=False)
 
 
-def plot_scatter_3D(X, y, U_Gr_list=None, U_Fl=None):
+def plot_scatter_3D(X, y, U_Gr_list=None, U_Fl=None, length=5):
     fig = plt.figure(figsize=(7, 7))
     cmap = plt.get_cmap('tab20c')
     colors = cmap(np.array([0, 4, 8, 12, 16, 1, 5, 9, 13, 17, 2, 6, 10, 14, 18, 3, 7, 11, 15, 19]))  # issue if more than 20 classes
@@ -125,10 +125,10 @@ def plot_scatter_3D(X, y, U_Gr_list=None, U_Fl=None):
     ax1.scatter(*X, alpha=.5, c=colors[y])
     if U_Fl is not None:
         mu = np.mean(X, axis=1)
-        ax1.quiver(*mu[:3], *U_Gr_list[0][:, 0], color='k', length=5, linewidth=3, alpha=.8, label='1D subspace')
-        ax1.quiver(*mu[:3], *U_Gr_list[1][:, 0], color='k', length=5, linewidth=3, alpha=.8, linestyle="dashed", label='2D subspace')
-        ax1.quiver(*mu[:3], *U_Gr_list[1][:, 1], color='k', length=5, linewidth=3, alpha=.8, linestyle="dashed")
+        ax1.quiver(*mu[:3], *U_Gr_list[0][:, 0], color='k', length=length, linewidth=3, alpha=.8, label='Gr(3, 1)')
+        ax1.quiver(*mu[:3], *U_Gr_list[1][:, 0], color='k', length=length, linewidth=3, alpha=.8, linestyle="dashed", label='Gr(3, 2)')
+        ax1.quiver(*mu[:3], *U_Gr_list[1][:, 1], color='k', length=length, linewidth=3, alpha=.8, linestyle="dashed")
         ax1.legend()
     plt.axis('equal')
-    plt.axis('off')
+    # plt.axis('off')
     plt.show(block=False)
