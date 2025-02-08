@@ -4,15 +4,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def subspace_distance(U_true, U_found):  # cf. [ye_schubert_2016]
+def subspace_distance(U_true, U_found):
     error = np.linalg.norm(np.arccos(np.clip(np.linalg.svd(U_true.T @ U_found, full_matrices=False)[1], -1, 1)))
     return float(error)
 
 
 def plot_subspace_distances(U_Gr_list, U_Fl, signature):
     plt.figure()
-    plt.plot([subspace_distance(U_Gr_list[k], U_Gr_list[k+1]) for k in range(len(signature) - 1)], label="Gr")
-    plt.plot([subspace_distance(U_Fl[:, :signature[k]], U_Fl[:, :signature[k+1]]) for k in range(len(signature) - 1)], label="Fl")
+    plt.plot([subspace_distance(U_Gr_list[k], U_Gr_list[k+1]) for k in range(len(signature) - 1)], linewidth=3, label="Grassmann")
+    plt.plot([subspace_distance(U_Fl[:, :signature[k]], U_Fl[:, :signature[k+1]]) for k in range(len(signature) - 1)], linewidth=3, label="Flag")
     plt.legend()
     plt.show(block=False)
 
@@ -58,8 +58,8 @@ def plot_explained_variance(X, U_Gr_list, U_Fl, signature):
     U_Fl_list = [np.zeros((p, p))] + [U_Fl[:, :q_k] for q_k in signature] + [np.eye(p)]
     U_Gr_list = [np.zeros((p, p))] + U_Gr_list + [np.eye(p)]
     plt.figure()
-    plt.plot((0,)+signature+(p,), [np.trace(U.T @ X @ X.T @ U) / np.trace(X @ X.T) for U in U_Gr_list], label='Gr')
-    plt.plot((0,)+signature+(p,), [np.trace(U.T @ X @ X.T @ U) / np.trace(X @ X.T) for U in U_Fl_list], label='Fl')
+    plt.plot((0,)+signature+(p,), [np.trace(U.T @ X @ X.T @ U) / np.trace(X @ X.T) for U in U_Gr_list], linewidth=3, label='Grassmann')
+    plt.plot((0,)+signature+(p,), [np.trace(U.T @ X @ X.T @ U) / np.trace(X @ X.T) for U in U_Fl_list], linewidth=3, label='Flag')
     plt.legend()
     plt.show(block=False)
 
@@ -79,14 +79,16 @@ def plot_reconstruction_errors(X, n_in, U_Gr, U_Fl, signature):
     labels_fl = np.array([0] * n_in + [1] * (n - n_in))[argsrt]
     plt.figure()
     plt.scatter(np.arange(n)[labels_gr==0], reconstruction_errors_gr[labels_gr==0], label='inliers', color="tab:blue", alpha=.8)
-    plt.scatter(np.arange(n)[labels_gr==1], reconstruction_errors_gr[labels_gr==1], label='outliers', color="tab:red", alpha=.8)
-    plt.plot(np.arange(n), reconstruction_errors_gr, color='k', label='Reconstruction Errors - Grassmann')
+    plt.scatter(np.arange(n)[labels_gr==1], reconstruction_errors_gr[labels_gr==1], label='outliers', color="tab:orange", alpha=.8)
+    plt.plot(np.arange(n), reconstruction_errors_gr, color='k', label='reconstruction errors')
+    plt.title("Gr(64, 5)")
     plt.legend()
     plt.show(block=False)
     plt.figure()
     plt.scatter(np.arange(n)[labels_fl==0], reconstruction_errors_fl[labels_fl==0], label='inliers', color="tab:blue", alpha=.8)
-    plt.scatter(np.arange(n)[labels_fl==1], reconstruction_errors_fl[labels_fl==1], label='outliers', color="tab:red", alpha=.8)
-    plt.plot(np.arange(n), reconstruction_errors_fl, color='k', label='Reconstruction Errors - Flag')
+    plt.scatter(np.arange(n)[labels_fl==1], reconstruction_errors_fl[labels_fl==1], label='outliers', color="tab:orange", alpha=.8)
+    plt.plot(np.arange(n), reconstruction_errors_fl, color='k', label='reconstruction errors')
+    plt.title("Fl(64, (1, 2, 5)))")
     plt.legend()
     plt.show()
     plt.show(block=False)
@@ -123,12 +125,15 @@ def plot_scatter_3D(X, y, U_Gr_list=None, U_Fl=None, length=5):
     colors = cmap(np.array([0, 4, 8, 12, 16, 1, 5, 9, 13, 17, 2, 6, 10, 14, 18, 3, 7, 11, 15, 19]))  # issue if more than 20 classes
     ax1 = fig.add_subplot(111, projection='3d')
     ax1.scatter(*X, alpha=.5, c=colors[y])
+    if U_Gr_list is not None:
+        mu = np.mean(X, axis=1)
+        ax1.quiver(*mu[:3], *U_Gr_list[0][:, 0], color='k', length=length, linewidth=3, alpha=.5, label='Gr(3, 1)')
+        ax1.quiver(*mu[:3], *U_Gr_list[1][:, 0], color='k', length=length, linewidth=3, alpha=.5, linestyle="dashed", label='Gr(3, 2)')
+        ax1.quiver(*mu[:3], *U_Gr_list[1][:, 1], color='k', length=length, linewidth=3, alpha=.5, linestyle="dashed")
     if U_Fl is not None:
         mu = np.mean(X, axis=1)
-        ax1.quiver(*mu[:3], *U_Gr_list[0][:, 0], color='k', length=length, linewidth=3, alpha=.8, label='Gr(3, 1)')
-        ax1.quiver(*mu[:3], *U_Gr_list[1][:, 0], color='k', length=length, linewidth=3, alpha=.8, linestyle="dashed", label='Gr(3, 2)')
-        ax1.quiver(*mu[:3], *U_Gr_list[1][:, 1], color='k', length=length, linewidth=3, alpha=.8, linestyle="dashed")
-        ax1.legend()
+        ax1.quiver(*mu[:3], *U_Fl[:, 0], color='k', length=length, linewidth=3, alpha=.8, label='Fl(3, (1, 2)) - U1')
+        ax1.quiver(*mu[:3], *U_Fl[:, 1], color='k', length=length, linewidth=3, alpha=.8, linestyle="dashed", label='Fl(3, (1, 2)) - U2')
+    ax1.legend()
     plt.axis('equal')
-    # plt.axis('off')
     plt.show(block=False)

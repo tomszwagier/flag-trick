@@ -86,14 +86,15 @@ class Flag(_FlagBase):
     def euclidean_to_riemannian_hessian(self, point, euclidean_gradient, euclidean_hessian, tangent_vector):
         raise NotImplementedError()
 
-    def retraction(self, point, tangent_vector):  # "The SVD approach is preferable in practice because of its stability." Zhu et al
+    def retraction(self, point, tangent_vector):
         u, _, vt = anp.linalg.svd(point + tangent_vector, full_matrices=False)
         return u @ vt
+        # Other possibility: QR retraction
         # return anp.linalg.qr(point + tangent_vector, mode='reduced')[0]
         # return self.exp(point, tangent_vector)
 
     def random_point(self):
-        u, _, vt = anp.linalg.svd(anp.random.normal(size=(self._p, self._q)), full_matrices=False)  # replace with qr if I wanna do like pymanopt... but wrong I think...
+        u, _, vt = anp.linalg.svd(anp.random.normal(size=(self._p, self._q)), full_matrices=False)
         return u @ vt
 
     def random_tangent_vector(self, point):

@@ -44,7 +44,7 @@ if __name__ == "__main__":
     # X = anp.concatenate([X[:, y==c][:, :100//len(anp.unique(y))] for c in anp.unique(y)], axis=1)  # 100 samples equally distributed between classes
     # y = anp.concatenate([y[y==c][:100//len(anp.unique(y))] for c in anp.unique(y)])
     # (p, n), C = X.shape, len(anp.unique(y))
-    # signature = tuple(anp.arange(1, n))
+    # signature = (1, 2)  # tuple(anp.arange(1, n)) for the nestedness plot / (1, 2) for the scatter plot
     # q = signature[-1]
 
     X, y = synthetic_sc_moon(n=100)

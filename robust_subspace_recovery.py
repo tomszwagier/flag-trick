@@ -54,5 +54,5 @@ if __name__ == "__main__":
     cmap = plt.get_cmap('tab20c')
     colors = cmap(anp.array([0, 4, 8, 12, 16, 1, 5, 9, 13, 17, 2, 6, 10, 14, 18, 3, 7, 11, 15, 19]))  # issue if more than 20 classes
     plot_nestedness_scatter(X, U_Gr_list[0], U_Gr_list[1], U_Fl, y=colors[y])
-    plot_reconstruction_errors(X, n_in, U_Gr_list[-1], U_Fl, signature)
+    # plot_reconstruction_errors(X, n_in, U_Gr_list[-1], U_Fl, signature)
     plot_scatter_3D(X, y, U_Gr_list=U_Gr_list, U_Fl=U_Fl, length=8)
