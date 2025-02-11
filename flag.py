@@ -25,27 +25,6 @@ class _FlagBase(Manifold):
 
 
 class Flag(_FlagBase):
-    r"""The Grassmann manifold.
-
-    This is the manifold of subspaces of dimension ``p`` of a real vector space
-    of dimension ``n``.
-    The optional argument ``k`` allows to optimize over the product of ``k``
-    Grassmann manifolds.
-    Elements are represented as ``n x p`` matrices if ``k == 1``, and as ``k x
-    n x p`` arrays if ``k > 1``.
-
-    Args:
-        n: Dimension of the ambient space.
-        p: Dimension of the subspaces.
-        k: The number of elements in the product.
-
-    Note:
-        The geometry assumed here is the one obtained by treating the
-        Grassmannian as a Riemannian quotient manifold of the Stiefel manifold
-        (see also :class:`pymanopt.manifolds.stiefel.Stiefel`)
-        with the orthogonal group :math:`\O(p) = \set{\vmQ \in \R^{p \times p}
-        : \transp{\vmQ}\vmQ = \vmQ\transp{\vmQ} = \Id_p}`.
-    """
 
     def __init__(self, p: int, signature: tuple):
         self._p = p

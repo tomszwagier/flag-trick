@@ -19,7 +19,7 @@ def lda_scatter_matrices(X, y):
     return Sw, Sb
 
 
-def generate_lda_data(X, y):  # use same preprocessing as in [ngo_trace_2012]
+def generate_lda_data(X, y):
     center = anp.mean(X, axis=1)[:, anp.newaxis]
     X = X - center
     p, n = X.shape
