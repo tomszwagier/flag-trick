@@ -1,6 +1,6 @@
 # flag-trick
 
-Authors' implementation of [_Nested subspace learning with flags_](https://arxiv.org/abs/2502.06022). More information to come.
+Authors' implementation of [_Nested subspace learning with flags_](https://arxiv.org/abs/2502.06022). Cleaning and documentation of the repository in progress.
 
 
 ## Abstract
