@@ -15,7 +15,7 @@ def normalized_graph_Laplacian(X):
     pairwise_dist = euclidean_distances(X.T, X.T, squared=False)
     W = anp.exp(- pairwise_dist**2 / (2 * anp.median(pairwise_dist)**2))
     D_12 = anp.diag(anp.sum(W, axis=1)**(-1/2))
-    L = anp.eye(n) - D_12 @ W @ D_12
+    L = anp.eye(X.shape[1]) - D_12 @ W @ D_12
     return L
 
 
