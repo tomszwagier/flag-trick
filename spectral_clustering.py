@@ -8,7 +8,7 @@ from time import time
 
 from data import synthetic_sc_moon
 from flag import Flag
-from utils import subspace_distance, plot_subspace_distances, plot_nestedness_scatter_sc, plot_scatter_3D
+from utils import subspace_distance, plot_subspace_distances, plot_nestedness_scatter_sc, plot_scatter_3D, color
 
 
 def normalized_graph_Laplacian(X):
@@ -39,6 +39,11 @@ def learn(n, signature, L, beta, init="random"):
 if __name__ == "__main__":
     anp.random.seed(42)
 
+    X, y = synthetic_sc_moon(n=100)
+    (p, n), C = X.shape, len(anp.unique(y))
+    signature = (1, 2)
+    q = signature[-1]
+
     # dataset = load_breast_cancer()
     # X, y = dataset.data.T, dataset.target
     # X = anp.concatenate([X[:, y==c][:, :100//len(anp.unique(y))] for c in anp.unique(y)], axis=1)  # 100 samples equally distributed between classes
@@ -46,11 +51,6 @@ if __name__ == "__main__":
     # (p, n), C = X.shape, len(anp.unique(y))
     # signature = (1, 2)  # tuple(anp.arange(1, n)) for the nestedness plot / (1, 2) for the scatter plot
     # q = signature[-1]
-
-    X, y = synthetic_sc_moon(n=100)
-    (p, n), C = X.shape, len(anp.unique(y))
-    signature = (1, 2)
-    q = signature[-1]
 
     L = normalized_graph_Laplacian(X)
     beta = 0.01
@@ -67,8 +67,6 @@ if __name__ == "__main__":
 
     print(f"Gr: nestedness_errors = {[subspace_distance(U_Gr_list[k], U_Gr_list[k+1]) for k in range(len(signature) - 1)]}, time = {time_gr}")
     print(f"Fl: nestedness_errors = {[subspace_distance(U_Fl[:, :signature[k]], U_Fl[:, :signature[k+1]]) for k in range(len(signature) - 1)]}, time = {time_fl}")
-    cmap = plt.get_cmap('tab20c')
-    colors = cmap(anp.array([0, 4, 8, 12, 16, 1, 5, 9, 13, 17, 2, 6, 10, 14, 18, 3, 7, 11, 15, 19]))  # issue if more than 20 classes
-    plot_nestedness_scatter_sc(U_Gr_list[0], U_Gr_list[1], U_Fl, y=colors[y])
+    plot_nestedness_scatter_sc(U_Gr_list[0], U_Gr_list[1], U_Fl, colors=[color(label) for label in y])
     # plot_subspace_distances(U_Gr_list, U_Fl, signature)
-    plot_scatter_3D(X, y, U_Gr_list=None, U_Fl=None)
+    plot_scatter_3D(X, U_Gr_list=None, U_Fl=None, colors=[color(label) for label in y])
